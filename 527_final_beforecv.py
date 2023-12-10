@@ -499,7 +499,7 @@ best_model = compare_models()
 best_model
 
 
-# In[49]:
+# In[70]:
 
 
 # uni encoded data
@@ -507,7 +507,7 @@ X = df_uni_ori.drop('y_encoded', axis=1)
 y = df_uni_ori['y_encoded']
 
 
-# In[50]:
+# In[71]:
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
@@ -551,545 +551,17 @@ print(f"Matthews Correlation Coefficient: {mcc}")
 
 
 
-# In[55]:
+# In[79]:
 
 
-model = LGBMClassifier()
+model = LGBMClassifier(verbose = -100)
 gridParams = {
     'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
     'n_estimators': [40, 80, 100, 200, 400],
     'num_leaves': [20, 30, 40, 50, 70, 100],
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
-print("Best parameters per fold:", best_params)
-
-
-# In[56]:
-
-
-optim_lgbm_params = {
-    'boosting_type': 'gbdt',
-    'objective': 'binary',
-    'metric': ['l2', 'auc'],
-    'num_leaves': 30,  
-    'learning_rate': 0.1,  
-    'feature_fraction': 0.9,
-    'bagging_fraction': 0.8,
-    'bagging_freq': 5,
-    'verbose': 0,
-    'n_estimators': 80 
-}
-
-# lgbm_model = LGBMClassifier(learning_rate=0.1, n_estimators=80, num_leaves=30)
-
-# lgbm_model.fit(X_train, y_train)
-
-# y_pred = lgbm_model.predict(X_test)
-
-# optim_accuracy = accuracy_score(y_test, y_pred)
-
-# optim_accuracy
-
-
-# In[57]:
-
-
-lgbm_model = lgb.train(
-    optim_lgbm_params,
-    train_data,
-    num_boost_round=100,
-    valid_sets=[train_data, test_data],
-    callbacks=[lgb.early_stopping(stopping_rounds=100)]
-)
-
-
-# In[58]:
-
-
-y_pred = lgbm_model.predict(X_test, num_iteration=lgbm_model.best_iteration)
-y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
-
-lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
-lgbm_accuracy
-
-
-# In[ ]:
-
-
-model = RandomForestClassifier()
-
-gridParams = {
-    'n_estimators': [50, 100, 200],
-    'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
-}
-
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-mean_best_score, std_best_score, best_params
-
-
-# In[ ]:
-
-
-model = HistGradientBoostingClassifier()
-
-# Grid parameters for HistGradientBoostingClassifier
-gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
-}
-
-# Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-
-best_scores = []
-best_params = []
-
-# Nested cross-validation
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-mean_best_score, std_best_score, best_params
-
-
-# In[ ]:
-
-
-# Unique Encoding without IF Outlier Dataset
-
-
-
-
-
-
-
-
-# In[53]:
-
-
-clf2 = setup(df_uni_without_iso_forest_outliers, target = "y_encoded")
-
-
-# In[54]:
-
-
-best_model2 = compare_models()
-
-
-# In[55]:
-
-
-best_model2
-
-
-# In[56]:
-
-
-# uni data without isolation forest
-X = df_uni_without_iso_forest_outliers.drop('y_encoded', axis=1)
-y = df_uni_without_iso_forest_outliers['y_encoded']
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
-
-
-# In[57]:
-
-
-sgd = SGDClassifier(random_state=527)
-
-sgd.fit(X_train, y_train)
-
-y_pred = sgd.predict(X_test)
-mcc = calculate_mcc(y_test, y_pred)
-
-sgd_accuracy = sgd.score(X_test, y_test)
-
-print(f"Accuracy: {sgd_accuracy}")
-print(f"Matthews Correlation Coefficient: {mcc}")
-
-
-# In[58]:
-
-
-sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
-
-sgd_rbf.fit(X_train, y_train)
-
-y_pred = sgd_rbf.predict(X_test)
-mcc = calculate_mcc(y_test, y_pred)
-
-sgd_rbf_accuracy = sgd_rbf.score(X_test, y_test)
-
-print(f"Accuracy: {sgd_rbf_accuracy}")
-print(f"Matthews Correlation Coefficient: {mcc}")
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-model = LGBMClassifier()
-gridParams = {
-    'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
-    'n_estimators': [40, 80, 100, 200, 400],
-    'num_leaves': [20, 30, 40, 50, 70, 100],
-}
-
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
-print("Best parameters per fold:", best_params)
-
-
-# In[ ]:
-
-
-optim_lgbm_params = {
-    'boosting_type': 'gbdt',
-    'objective': 'binary',
-    'metric': ['l2', 'auc'],
-    'num_leaves': 30,  
-    'learning_rate': 0.1,  
-    'feature_fraction': 0.9,
-    'bagging_fraction': 0.8,
-    'bagging_freq': 5,
-    'verbose': 0,
-    'n_estimators': 80 
-}
-
-# lgbm_model = LGBMClassifier(learning_rate=0.1, n_estimators=80, num_leaves=30)
-
-# lgbm_model.fit(X_train, y_train)
-
-# y_pred = lgbm_model.predict(X_test)
-
-# optim_accuracy = accuracy_score(y_test, y_pred)
-
-# optim_accuracy
-
-
-# In[ ]:
-
-
-lgbm_model = lgb.train(
-    optim_lgbm_params,
-    train_data,
-    num_boost_round=100,
-    valid_sets=[train_data, test_data],
-    callbacks=[lgb.early_stopping(stopping_rounds=100)]
-)
-
-
-# In[ ]:
-
-
-y_pred = lgbm_model.predict(X_test, num_iteration=lgbm_model.best_iteration)
-y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
-
-lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
-lgbm_accuracy
-
-
-# In[ ]:
-
-
-model = RandomForestClassifier()
-
-gridParams = {
-    'n_estimators': [50, 100, 200],
-    'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
-}
-
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-mean_best_score, std_best_score, best_params
-
-
-# In[ ]:
-
-
-model = HistGradientBoostingClassifier()
-
-# Grid parameters for HistGradientBoostingClassifier
-gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
-}
-
-# Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-
-best_scores = []
-best_params = []
-
-# Nested cross-validation
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-mean_best_score, std_best_score, best_params
-
-
-# In[ ]:
-
-
-# Unique Encoding without LOF Outlier Dataset
-
-
-
-
-
-
-
-
-# In[59]:
-
-
-clf3 = setup(df_uni_without_lof_outliers, target = 'y_encoded')
-
-
-# In[60]:
-
-
-best_model3 = compare_models()
-
-
-# In[61]:
-
-
-best_model3
-
-
-# In[62]:
-
-
-# uni data without lof
-X = df_uni_without_lof_outliers.drop('y_encoded', axis=1)
-y = df_uni_without_lof_outliers['y_encoded']
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
-
-
-# In[63]:
-
-
-sgd= make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
-
-sgd.fit(X_train, y_train)
-
-y_pred = sgd.predict(X_test)
-mcc = calculate_mcc(y_test, y_pred)
-
-sgd_accuracy = sgd.score(X_test, y_test)
-
-print(f"Accuracy: {sgd_accuracy}")
-print(f"Matthews Correlation Coefficient: {mcc}")
-
-
-# In[64]:
-
-
-sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
-
-sgd_rbf.fit(X_train, y_train)
-
-y_pred = sgd_rbf.predict(X_test)
-mcc = calculate_mcc(y_test, y_pred)
-
-sgd_rbf_accuracy = sgd_rbf.score(X_test, y_test)
-
-print(f"Accuracy: {sgd_rbf_accuracy}")
-print(f"Matthews Correlation Coefficient: {mcc}")
-
-
-# In[ ]:
-
-
-
-
-
-# In[109]:
-
-
-model = LGBMClassifier()
-gridParams = {
-    'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
-    'n_estimators': [40, 80, 100, 200, 400],
-    'num_leaves': [20, 30, 40, 50, 70, 100],
-}
-
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
-print("Best parameters per fold:", best_params)
-
-
-# In[112]:
-
-
-model = LGBMClassifier()
-gridParams = {
-    'learning_rate': [0.02, 0.1],
-    'n_estimators': [80, 200, 400],
-    'num_leaves': [20, 30, 40],
-}
-
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=8, shuffle=True, random_state=527)
-
-best_scores = []
-best_params = []
-
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
-print("Best parameters per fold:", best_params)
-
-
-# In[113]:
-
-
-model = LGBMClassifier()
-gridParams = {
-    'learning_rate': [0.02, 0.1],
-    'n_estimators': [80, 200],
-    'num_leaves': [20, 30],
-}
-
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
 outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
@@ -1112,7 +584,444 @@ print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
 print("Best parameters per fold:", best_params)
 
 
-# In[117]:
+# In[80]:
+
+
+model = LGBMClassifier(verbose = -100)
+gridParams = {
+    'learning_rate': [0.02, 0.1],
+    'n_estimators': [100, 200, 400],
+    'num_leaves': [30, 70, 100],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[82]:
+
+
+optim_lgbm_params1 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 100,  
+    'learning_rate': 0.02,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 200
+}
+
+
+# In[83]:
+
+
+optim_lgbm_params2 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 30,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 100
+}
+
+
+# In[84]:
+
+
+optim_lgbm_params3 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 70,  
+    'learning_rate': 0.02,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 400
+}
+
+
+# In[85]:
+
+
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+
+# In[86]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params1,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[87]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[88]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params2,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[89]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[92]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params3,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[93]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[209]:
+
+
+model = RandomForestClassifier()
+
+gridParams = {
+    'n_estimators': [50, 100, 150, 200],
+    'max_depth': [10, 20, 30, None],
+    'criterion':['gini', 'entropy']
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[94]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527) 
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[95]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.05, 0.1],
+    'max_iter': [200],
+    'max_leaf_nodes': [28, 30, 32] 
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527) 
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[96]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.05, max_iter = 200, max_leaf_nodes = 28, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[97]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.05, max_iter = 200, max_leaf_nodes = 32, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[98]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.05, max_iter = 200, max_leaf_nodes = 30, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[110]:
+
+
+# Unique Encoding without IF Outlier Dataset
+
+
+
+
+
+
+
+
+# In[111]:
+
+
+clf2 = setup(df_uni_without_iso_forest_outliers, target = "y_encoded")
+
+
+# In[112]:
+
+
+best_model2 = compare_models()
+
+
+# In[113]:
+
+
+best_model2
+
+
+# In[231]:
+
+
+# uni data without isolation forest
+X = df_uni_without_iso_forest_outliers.drop('y_encoded', axis=1)
+y = df_uni_without_iso_forest_outliers['y_encoded']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
+
+
+# In[115]:
+
+
+sgd = SGDClassifier(random_state=527)
+
+sgd.fit(X_train, y_train)
+
+y_pred = sgd.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+sgd_accuracy = sgd.score(X_test, y_test)
+
+print(f"Accuracy: {sgd_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[116]:
+
+
+sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
+
+sgd_rbf.fit(X_train, y_train)
+
+y_pred = sgd_rbf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+sgd_rbf_accuracy = sgd_rbf.score(X_test, y_test)
+
+print(f"Accuracy: {sgd_rbf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[ ]:
+
+
+
+
+
+# In[232]:
+
+
+model = LGBMClassifier()
+
+gridParams = {
+    'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
+    'n_estimators': [40, 80, 100, 200, 400],
+    'num_leaves': [20, 30, 40, 50, 70, 100],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[ ]:
 
 
 optim_lgbm_params = {
@@ -1128,18 +1037,8 @@ optim_lgbm_params = {
     'n_estimators': 80 
 }
 
-# lgbm_model = LGBMClassifier(learning_rate=0.1, n_estimators=80, num_leaves=30)
 
-# lgbm_model.fit(X_train, y_train)
-
-# y_pred = lgbm_model.predict(X_test)
-
-# optim_accuracy = accuracy_score(y_test, y_pred)
-
-# optim_accuracy
-
-
-# In[118]:
+# In[ ]:
 
 
 lgbm_model = lgb.train(
@@ -1151,7 +1050,7 @@ lgbm_model = lgb.train(
 )
 
 
-# In[119]:
+# In[ ]:
 
 
 y_pred = lgbm_model.predict(X_test, num_iteration=lgbm_model.best_iteration)
@@ -1161,21 +1060,88 @@ lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
 lgbm_accuracy
 
 
-# In[ ]:
+# In[233]:
 
 
 model = RandomForestClassifier()
 
 gridParams = {
-    'n_estimators': [50, 100, 200],
+    'n_estimators': [50, 100, 150, 200],
     'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
+    'criterion':['gini', 'entropy']
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[236]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[235]:
+
+
+model = RandomForestClassifier()
+
+gridParams = {
+    'n_estimators': [50, 100, 150, 200],
+    'max_depth': [10, 20, 30, None],
+    'criterion':['gini', 'entropy', 'log_loss']
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1198,44 +1164,19 @@ mean_best_score, std_best_score, best_params
 # In[ ]:
 
 
-model = HistGradientBoostingClassifier()
 
-# Grid parameters for HistGradientBoostingClassifier
-gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
-}
-
-# Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
-
-best_scores = []
-best_params = []
-
-# Nested cross-validation
-for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
-
-    grid.fit(X_train, y_train)
-    best_scores.append(grid.best_score_)
-    best_params.append(grid.best_params_)
-
-# Aggregate and print the results
-mean_best_score = np.mean(best_scores)
-std_best_score = np.std(best_scores)
-
-mean_best_score, std_best_score, best_params
 
 
 # In[ ]:
 
 
-# One-Hot Encoding Original Dataset
+
+
+
+# In[99]:
+
+
+# Unique Encoding without LOF Outlier Dataset
 
 
 
@@ -1244,38 +1185,38 @@ mean_best_score, std_best_score, best_params
 
 
 
-# In[65]:
+# In[100]:
 
 
-clf4 = setup(df_oh_ori, target = 'y_encoded')
+clf3 = setup(df_uni_without_lof_outliers, target = 'y_encoded')
 
 
-# In[66]:
+# In[101]:
 
 
-best_model4 = compare_models()
+best_model3 = compare_models()
 
 
-# In[67]:
+# In[102]:
 
 
-best_model4
+best_model3
 
 
-# In[68]:
+# In[126]:
 
 
 # uni data without lof
-X = df_oh_ori.drop('y_encoded', axis=1)
-y = df_oh_ori['y_encoded']
+X = df_uni_without_lof_outliers.drop('y_encoded', axis=1)
+y = df_uni_without_lof_outliers['y_encoded']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
 
 
-# In[69]:
+# In[104]:
 
 
-sgd= make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
+sgd = SGDClassifier(random_state=527)
 
 sgd.fit(X_train, y_train)
 
@@ -1288,7 +1229,7 @@ print(f"Accuracy: {sgd_accuracy}")
 print(f"Matthews Correlation Coefficient: {mcc}")
 
 
-# In[70]:
+# In[105]:
 
 
 sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
@@ -1310,19 +1251,19 @@ print(f"Matthews Correlation Coefficient: {mcc}")
 
 
 
-# In[ ]:
+# In[106]:
 
 
-model = LGBMClassifier()
+model = LGBMClassifier(verbose = -100)
 gridParams = {
     'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
     'n_estimators': [40, 80, 100, 200, 400],
     'num_leaves': [20, 30, 40, 50, 70, 100],
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1343,21 +1284,190 @@ print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
 print("Best parameters per fold:", best_params)
 
 
-# In[ ]:
+# In[107]:
+
+
+model = LGBMClassifier(verbose = -100)
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.1],
+    'n_estimators': [200, 400],
+    'num_leaves': [20, 40, 100],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[127]:
+
+
+optim_lgbm_params1 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 100,  
+    'learning_rate': 0.01,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': 0,
+    'n_estimators': 400
+}
+
+
+# In[128]:
+
+
+optim_lgbm_params2 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 40,  
+    'learning_rate': 0.02,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': 0,
+    'n_estimators': 400 
+}
+
+
+# In[129]:
+
+
+optim_lgbm_params3 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 20,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': 0,
+    'n_estimators': 200 
+}
+
+
+# In[130]:
+
+
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+
+# In[131]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params1,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[132]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[133]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params2,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[134]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[135]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params3,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)],
+    verbose = -100
+)
+
+
+# In[136]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[229]:
 
 
 model = RandomForestClassifier()
 
 gridParams = {
-    'n_estimators': [50, 100, 200],
+    'n_estimators': [50, 100, 150, 200],
     'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
+    'criterion':['gini', 'entropy']
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1377,31 +1487,27 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
-# In[ ]:
+# In[138]:
 
 
-model = HistGradientBoostingClassifier()
+model = RandomForestClassifier()
 
-# Grid parameters for HistGradientBoostingClassifier
 gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
+    'n_estimators': [150, 200],
+    'max_depth': [20, None],
+    'criterion':['gini','entropy']
 }
 
-# Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
 
-# Nested cross-validation
 for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
     grid.fit(X_train, y_train)
     best_scores.append(grid.best_score_)
@@ -1414,7 +1520,671 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
+# In[139]:
+
+
+rf = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=20)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[140]:
+
+
+rf = RandomForestClassifier(n_estimators=150, criterion='gini', max_depth=20)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[142]:
+
+
+rf = RandomForestClassifier(n_estimators=150, criterion='entropy', max_depth=None)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[143]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[144]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.1],
+    'max_iter': [100, 800],
+    'max_leaf_nodes': [28, 30] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[149]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 100, max_leaf_nodes = 30, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[146]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.01, max_iter = 800, max_leaf_nodes = 28, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[148]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 100, max_leaf_nodes = 28, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[150]:
+
+
+# One-Hot Encoding Original Dataset
+
+
+
+
+
+
+
+
+# In[126]:
+
+
+clf4 = setup(df_oh_ori, target = 'y_encoded')
+
+
+# In[127]:
+
+
+best_model4 = compare_models()
+
+
+# In[128]:
+
+
+best_model4
+
+
+# In[151]:
+
+
+# uni data without lof
+X = df_oh_ori.drop('y_encoded', axis=1)
+y = df_oh_ori['y_encoded']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
+
+
+# In[130]:
+
+
+sgd = SGDClassifier(random_state=527)
+
+sgd.fit(X_train, y_train)
+
+y_pred = sgd.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+sgd_accuracy = sgd.score(X_test, y_test)
+
+print(f"Accuracy: {sgd_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[131]:
+
+
+sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
+
+sgd_rbf.fit(X_train, y_train)
+
+y_pred = sgd_rbf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+sgd_rbf_accuracy = sgd_rbf.score(X_test, y_test)
+
+print(f"Accuracy: {sgd_rbf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
 # In[ ]:
+
+
+
+
+
+# In[224]:
+
+
+model = LGBMClassifier(verbose = -100)
+
+gridParams = {
+    'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
+    'n_estimators': [40, 80, 100, 200, 400],
+    'num_leaves': [20, 30, 40, 50, 70, 100],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[152]:
+
+
+model = LGBMClassifier(verbose = -100)
+
+gridParams = {
+    'learning_rate': [0.1],
+    'n_estimators': [80, 200],
+    'num_leaves': [20, 30]
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[153]:
+
+
+optim_lgbm_params1 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 20,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 200
+}
+
+
+# In[154]:
+
+
+optim_lgbm_params2 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 20,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 80
+}
+
+
+# In[155]:
+
+
+optim_lgbm_params3 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 30,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 80
+}
+
+
+# In[156]:
+
+
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+
+# In[157]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params1,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[158]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[159]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params2,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[160]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[161]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params3,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[162]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[225]:
+
+
+model = RandomForestClassifier()
+
+gridParams = {
+    'n_estimators': [50, 100, 150, 200],
+    'max_depth': [10, 20, 30, None],
+    'criterion':['gini', 'entropy']
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[163]:
+
+
+model = RandomForestClassifier()
+
+gridParams = {
+    'n_estimators': [150, 200],
+    'max_depth': [30, None],
+    'criterion':['gini']
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[164]:
+
+
+rf = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=30)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[165]:
+
+
+rf = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=None)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[166]:
+
+
+rf = RandomForestClassifier(n_estimators=150, criterion='gini', max_depth=30)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[226]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[167]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.05],
+    'max_iter': [200],
+    'max_leaf_nodes': [31, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[168]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.05, max_iter = 200, max_leaf_nodes = 32, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[169]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.05, max_iter = 200, max_leaf_nodes = 31, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[132]:
 
 
 # One-Hot Encoding without LOF Outlier Dataset
@@ -1428,25 +2198,25 @@ mean_best_score, std_best_score, best_params
 
 
 
-# In[71]:
+# In[133]:
 
 
 clf5 = setup(df_oh_without_lof_outliers, target = 'y_encoded')
 
 
-# In[72]:
+# In[134]:
 
 
 best_model5 = compare_models()
 
 
-# In[73]:
+# In[135]:
 
 
 best_model5
 
 
-# In[74]:
+# In[182]:
 
 
 # uni data without lof
@@ -1456,10 +2226,10 @@ y = df_oh_without_lof_outliers['y_encoded']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
 
 
-# In[75]:
+# In[183]:
 
 
-sgd= make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
+sgd = SGDClassifier(random_state=527)
 
 sgd.fit(X_train, y_train)
 
@@ -1472,7 +2242,7 @@ print(f"Accuracy: {sgd_accuracy}")
 print(f"Matthews Correlation Coefficient: {mcc}")
 
 
-# In[76]:
+# In[212]:
 
 
 sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
@@ -1494,19 +2264,20 @@ print(f"Matthews Correlation Coefficient: {mcc}")
 
 
 
-# In[ ]:
+# In[213]:
 
 
-model = LGBMClassifier()
+model = LGBMClassifier(verbose = -100)
+
 gridParams = {
     'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
     'n_estimators': [40, 80, 100, 200, 400],
     'num_leaves': [20, 30, 40, 50, 70, 100],
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1527,21 +2298,190 @@ print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
 print("Best parameters per fold:", best_params)
 
 
-# In[ ]:
+# In[171]:
+
+
+model = LGBMClassifier(verbose = -100)
+
+gridParams = {
+    'learning_rate': [0.01, 0.1],
+    'n_estimators': [40, 100, 400],
+    'num_leaves': [20, 50, 70],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[184]:
+
+
+optim_lgbm_params1 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 20,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 100
+}
+
+
+# In[185]:
+
+
+optim_lgbm_params2 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 70,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 40
+}
+
+
+# In[186]:
+
+
+optim_lgbm_params3 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 50,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 400
+}
+
+
+# In[187]:
+
+
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+
+# In[188]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params1,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[189]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[190]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params2,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[191]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[192]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params3,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[193]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[214]:
 
 
 model = RandomForestClassifier()
 
 gridParams = {
-    'n_estimators': [50, 100, 200],
+    'n_estimators': [50, 100, 150, 200],
     'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
+    'criterion':['gini', 'entropy']
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1561,21 +2501,67 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
-# In[ ]:
+# In[194]:
+
+
+rf = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=20)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[195]:
+
+
+rf = RandomForestClassifier(n_estimators=200, criterion='gini', max_depth=30)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[196]:
+
+
+rf = RandomForestClassifier(n_estimators=150, criterion='gini', max_depth=30)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[215]:
 
 
 model = HistGradientBoostingClassifier()
 
-# Grid parameters for HistGradientBoostingClassifier
 gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
 }
 
 # Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
 outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
 
@@ -1584,9 +2570,9 @@ best_params = []
 
 # Nested cross-validation
 for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
-
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    
     grid.fit(X_train, y_train)
     best_scores.append(grid.best_score_)
     best_params.append(grid.best_params_)
@@ -1598,7 +2584,55 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
-# In[ ]:
+# In[197]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 50, max_leaf_nodes = 30, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[198]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 200, max_leaf_nodes = 30, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[199]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 100, max_leaf_nodes = 30, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[216]:
 
 
 # One-Hot Encoding without IF Outlier Dataset
@@ -1629,20 +2663,20 @@ best_model6 = compare_models()
 best_model6
 
 
-# In[80]:
+# In[226]:
 
 
 # uni data without if
-X = df_uni_without_iso_forest_outliers.drop('y_encoded', axis=1)
-y = df_uni_without_iso_forest_outliers['y_encoded']
+X = df_oh_without_iso_forest_outliers.drop('y_encoded', axis=1)
+y = df_oh_without_iso_forest_outliers['y_encoded']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=527)
 
 
-# In[81]:
+# In[218]:
 
 
-sgd= make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
+sgd = SGDClassifier(random_state=527)
 
 sgd.fit(X_train, y_train)
 
@@ -1655,7 +2689,7 @@ print(f"Accuracy: {sgd_accuracy}")
 print(f"Matthews Correlation Coefficient: {mcc}")
 
 
-# In[82]:
+# In[219]:
 
 
 sgd_rbf = make_pipeline(RBFSampler(gamma=1, random_state=527), SGDClassifier(random_state=527))
@@ -1677,19 +2711,20 @@ print(f"Matthews Correlation Coefficient: {mcc}")
 
 
 
-# In[ ]:
+# In[220]:
 
 
-model = LGBMClassifier()
+model = LGBMClassifier(verbose = -100)
+
 gridParams = {
     'learning_rate': [0.001, 0.002, 0.005, 0.01, 0.02, 0.1],
     'n_estimators': [40, 80, 100, 200, 400],
     'num_leaves': [20, 30, 40, 50, 70, 100],
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1710,21 +2745,190 @@ print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
 print("Best parameters per fold:", best_params)
 
 
-# In[ ]:
+# In[201]:
+
+
+model = LGBMClassifier(verbose = -100)
+
+gridParams = {
+    'learning_rate': [0.02, 0.1],
+    'n_estimators': [80, 400],
+    'num_leaves': [50],
+}
+
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
+
+best_scores = []
+best_params = []
+
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+print(f"Mean Best Score: {mean_best_score:.4f} ± {std_best_score:.4f}")
+print("Best parameters per fold:", best_params)
+
+
+# In[213]:
+
+
+optim_lgbm_params1 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 50,  
+    'learning_rate': 0.02,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 400
+}
+
+
+# In[214]:
+
+
+optim_lgbm_params2 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 50,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 80
+}
+
+
+# In[215]:
+
+
+optim_lgbm_params3 = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': ['l2', 'auc'],
+    'num_leaves': 50,  
+    'learning_rate': 0.1,  
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 5,
+    'verbose': -100,
+    'n_estimators': 80
+}
+
+
+# In[216]:
+
+
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+
+# In[217]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params1,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[218]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[219]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params2,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[220]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[221]:
+
+
+lgbm = lgb.train(
+    optim_lgbm_params3,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[train_data, test_data],
+    callbacks=[lgb.early_stopping(stopping_rounds=100)]
+)
+
+
+# In[222]:
+
+
+y_pred = lgbm.predict(X_test, num_iteration=lgbm.best_iteration)
+y_pred_binary = [1 if x > 0.5 else 0 for x in y_pred]
+
+mcc = calculate_mcc(y_test, y_pred_binary)
+
+lgbm_accuracy = accuracy_score(y_test, y_pred_binary)
+
+print(f"Accuracy: {lgbm_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[221]:
 
 
 model = RandomForestClassifier()
 
 gridParams = {
-    'n_estimators': [50, 100, 200],
+    'n_estimators': [50, 100, 150, 200],
     'max_depth': [10, 20, 30, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
+    'criterion':['gini', 'entropy']
 }
 
-inner_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=5, shuffle=True, random_state=527)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
@@ -1744,31 +2948,27 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
-# In[ ]:
+# In[240]:
 
 
-model = HistGradientBoostingClassifier()
+model = RandomForestClassifier()
 
-# Grid parameters for HistGradientBoostingClassifier
 gridParams = {
-    'learning_rate': [0.01, 0.05, 0.1],
-    'max_iter': [50, 100, 200],
-    'max_leaf_nodes': [20, 30, 40],
-    'min_samples_leaf': [10, 20, 30]
+    'n_estimators': [150, 200],
+    'max_depth': [30, None],
+    'criterion':['entropy']
 }
 
-# Inner and outer cross-validation settings
-inner_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)
 grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
-outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)
 
 best_scores = []
 best_params = []
 
-# Nested cross-validation
 for train_idx, test_idx in outer_cv.split(X, y):
-    X_train, X_test = X[train_idx], X[test_idx]
-    y_train, y_test = y[train_idx], y[test_idx]
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
     grid.fit(X_train, y_train)
     best_scores.append(grid.best_score_)
@@ -1781,22 +2981,154 @@ std_best_score = np.std(best_scores)
 mean_best_score, std_best_score, best_params
 
 
-# In[ ]:
+# In[227]:
 
 
+rf = RandomForestClassifier(n_estimators=200, criterion='entropy', max_depth=None)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
 
 
-
-# In[ ]:
-
+# In[228]:
 
 
+rf = RandomForestClassifier(n_estimators=150, criterion='entropy', max_depth=None)
+                            
+rf.fit(X_train, y_train)
+
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
 
 
-# In[ ]:
+# In[229]:
 
 
+rf = RandomForestClassifier(n_estimators=150, criterion='entropy', max_depth=30)
+                            
+rf.fit(X_train, y_train)
 
+y_pred = rf.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+rf_accuracy = rf.score(X_test, y_test)
+
+print(f"Accuracy: {rf_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[238]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.05, 0.1, 0.2],
+    'max_iter': [50, 100, 200, 400, 800],
+    'max_leaf_nodes': [28, 29, 30, 31, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[239]:
+
+
+model = HistGradientBoostingClassifier()
+
+gridParams = {
+    'learning_rate': [0.01, 0.02, 0.1],
+    'max_iter': [800],
+    'max_leaf_nodes': [29, 30, 32] 
+}
+
+# Inner and outer cross-validation settings
+inner_cv = KFold(n_splits=8, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+grid = GridSearchCV(model, gridParams, cv=inner_cv, n_jobs=-1)
+outer_cv = KFold(n_splits=3, shuffle=True, random_state=527)  # Reduced number of splits for quicker processing
+
+best_scores = []
+best_params = []
+
+# Nested cross-validation
+for train_idx, test_idx in outer_cv.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+    grid.fit(X_train, y_train)
+    best_scores.append(grid.best_score_)
+    best_params.append(grid.best_params_)
+
+# Aggregate and print the results
+mean_best_score = np.mean(best_scores)
+std_best_score = np.std(best_scores)
+
+mean_best_score, std_best_score, best_params
+
+
+# In[230]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.1, max_iter = 800, max_leaf_nodes = 32, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
+
+
+# In[231]:
+
+
+hgb = HistGradientBoostingClassifier(learning_rate = 0.02, max_iter = 800, max_leaf_nodes = 32, random_state = 527)
+
+hgb.fit(X_train, y_train)
+
+y_pred = hgb.predict(X_test)
+mcc = calculate_mcc(y_test, y_pred)
+
+hgb_accuracy = hgb.score(X_test, y_test)
+
+print(f"Accuracy: {hgb_accuracy}")
+print(f"Matthews Correlation Coefficient: {mcc}")
 
 
 # In[ ]:
